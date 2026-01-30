@@ -6,73 +6,40 @@
   <title>Sales Dialer</title>
   <script src="https://sdk.twilio.com/js/voice/releases/2.11.2/twilio.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: #f2f2f7;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+      background:#f2f2f7;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px
     }
-    .dialer-card {
-      background: #ffffff;
-      border-radius: 24px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
-      width: 100%;
-      max-width: 380px;
-      overflow: hidden;
-    }
-    .dialer-header {
-      padding: 40px 24px 32px;
-      text-align: center;
-      background: #ffffff;
-    }
-    .business-name { font-size: 18px; font-weight: 600; color: #1c1c1e; margin-bottom: 12px; word-wrap: break-word; }
-    .phone-number { font-size: 34px; font-weight: 300; color: #1c1c1e; margin-bottom: 16px; font-variant-numeric: tabular-nums; }
-    .call-status { font-size: 15px; color: #8e8e93; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; margin-bottom: 8px; }
-    .call-timer { font-size: 28px; font-weight: 300; color: #1c1c1e; font-variant-numeric: tabular-nums; }
-    .dialer-body { padding: 0 24px 32px; }
-    .error-container { margin-bottom: 20px; }
-    .error-message.critical {
-      background: #ffe5e5; border: 1px solid #ff3b30; color: #c7254e;
-      padding: 14px; border-radius: 12px; font-size: 13px; line-height: 1.5;
-    }
-    .error-title { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
-    .error-details {
-      font-size: 12px; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.04);
-      border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
-      word-break: break-word; white-space: pre-wrap;
-    }
-    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .key {
-      aspect-ratio: 1; border: none; background: #f2f2f7; border-radius: 50%;
-      font-size: 28px; font-weight: 300; color: #1c1c1e; cursor: pointer;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-    .key:disabled { opacity: 0.4; cursor: not-allowed; }
-    .call-button {
-      width: 72px; height: 72px; border: none; border-radius: 50%;
-      background: #34c759; color: white; font-size: 32px; cursor: pointer;
-      margin: 0 auto; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 12px rgba(52,199,89,0.3);
-    }
-    .call-button.hangup { background: #ff3b30; box-shadow: 0 4px 12px rgba(255,59,48,0.3); }
-    .controls { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
-    .control-btn {
-      padding: 12px 24px; border: none; border-radius: 20px; font-size: 15px;
-      font-weight: 500; cursor: pointer; background: #f2f2f7; color: #1c1c1e;
-    }
-    .control-btn.active { background: #ff3b30; color: white; }
-    .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .hidden { display: none; }
+    .dialer-card{background:#fff;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,.12);width:100%;max-width:380px;overflow:hidden}
+    .dialer-header{padding:40px 24px 32px;text-align:center}
+    .business-name{font-size:18px;font-weight:600;color:#1c1c1e;margin-bottom:12px;word-wrap:break-word}
+    .phone-number{font-size:34px;font-weight:300;color:#1c1c1e;letter-spacing:-.5px;margin-bottom:16px;font-variant-numeric:tabular-nums}
+    .call-status{font-size:15px;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;font-weight:500;margin-bottom:8px}
+    .call-timer{font-size:28px;font-weight:300;color:#1c1c1e;font-variant-numeric:tabular-nums}
+    .dialer-body{padding:0 24px 32px}
+    .error-container{margin-bottom:20px}
+    .error-message{background:#ffe5e5;border:1px solid #ff3b30;color:#c7254e;padding:14px;border-radius:12px;font-size:13px;line-height:1.5}
+    .error-title{font-weight:600;margin-bottom:6px;font-size:14px}
+    .error-details{font-size:12px;margin-top:8px;padding:8px;background:rgba(0,0,0,.04);border-radius:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,monospace;word-break:break-word;white-space:pre-wrap}
+    .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+    .key{aspect-ratio:1;border:none;background:#f2f2f7;border-radius:50%;font-size:28px;font-weight:300;color:#1c1c1e;cursor:pointer;transition:all .15s ease;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+    .key:disabled{opacity:.4;cursor:not-allowed}
+    .call-button{width:72px;height:72px;border:none;border-radius:50%;background:#34c759;color:#fff;font-size:28px;cursor:pointer;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:all .2s ease;box-shadow:0 4px 12px rgba(52,199,89,.3)}
+    .call-button.hangup{background:#ff3b30;box-shadow:0 4px 12px rgba(255,59,48,.3)}
+    .call-button:disabled{opacity:.5;cursor:not-allowed}
+    .call-button-container{display:flex;justify-content:center;margin-bottom:24px}
+    .controls{display:flex;gap:12px;justify-content:center}
+    .control-btn{padding:12px 24px;border:none;border-radius:20px;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s ease;background:#f2f2f7;color:#1c1c1e}
+    .control-btn:disabled{opacity:.4;cursor:not-allowed}
+    .control-btn.active{background:#ff3b30;color:#fff}
+    .hidden{display:none}
   </style>
 </head>
 <body>
   <div class="dialer-card">
     <div class="dialer-header">
-      <div class="business-name" id="businessName">Loading...</div>
+      <div class="business-name" id="businessName">Loading…</div>
       <div class="phone-number" id="phoneNumber">—</div>
       <div class="call-status" id="callStatus">Tap to Call</div>
       <div class="call-timer hidden" id="callTimer">00:00</div>
@@ -82,13 +49,21 @@
       <div id="errorContainer" class="error-container"></div>
 
       <div class="keypad">
-        <button class="key" disabled>1</button><button class="key" disabled>2</button><button class="key" disabled>3</button>
-        <button class="key" disabled>4</button><button class="key" disabled>5</button><button class="key" disabled>6</button>
-        <button class="key" disabled>7</button><button class="key" disabled>8</button><button class="key" disabled>9</button>
-        <button class="key" disabled>*</button><button class="key" disabled>0</button><button class="key" disabled>#</button>
+        <button class="key" data-digit="1" disabled>1</button>
+        <button class="key" data-digit="2" disabled>2</button>
+        <button class="key" data-digit="3" disabled>3</button>
+        <button class="key" data-digit="4" disabled>4</button>
+        <button class="key" data-digit="5" disabled>5</button>
+        <button class="key" data-digit="6" disabled>6</button>
+        <button class="key" data-digit="7" disabled>7</button>
+        <button class="key" data-digit="8" disabled>8</button>
+        <button class="key" data-digit="9" disabled>9</button>
+        <button class="key" data-digit="*" disabled>*</button>
+        <button class="key" data-digit="0" disabled>0</button>
+        <button class="key" data-digit="#" disabled>#</button>
       </div>
 
-      <div style="display:flex;justify-content:center;margin-bottom:24px;">
+      <div class="call-button-container">
         <button class="call-button" id="callButton" title="Tap to Enable Mic & Call">📞</button>
       </div>
 
@@ -100,77 +75,80 @@
 
   <script>
     const CONFIG = {
-      tokenEndpoint: 'https://twilio-token-6608.twil.io/twilio-token',
-      authKey: ‘9c7c1f5a-8d5a-4c9e-9f21-8f7b3b5f1c92'
+      tokenEndpoint: "https://twilio-token-6608.twil.io/twilio-token",
+      authKey: "PASTE_YOUR_DIALER_AUTH_KEY_HERE"
     };
 
     let device = null;
-    let activeCall = null;
+    let call = null;
+    let isRegistered = false;
+    let deviceInitialized = false;
     let isMuted = false;
     let timer = null;
     let seconds = 0;
-    let deviceInitialized = false;
-    let isRegistered = false;
 
     const el = {
-      businessName: document.getElementById('businessName'),
-      phoneNumber: document.getElementById('phoneNumber'),
-      callStatus: document.getElementById('callStatus'),
-      callTimer: document.getElementById('callTimer'),
-      errorContainer: document.getElementById('errorContainer'),
-      callButton: document.getElementById('callButton'),
-      muteBtn: document.getElementById('muteBtn')
+      businessName: document.getElementById("businessName"),
+      phoneNumber: document.getElementById("phoneNumber"),
+      callStatus: document.getElementById("callStatus"),
+      callTimer: document.getElementById("callTimer"),
+      errorContainer: document.getElementById("errorContainer"),
+      callButton: document.getElementById("callButton"),
+      muteBtn: document.getElementById("muteBtn")
     };
 
-    function getParams() {
+    function params() {
       const p = new URLSearchParams(location.search);
-      return { to: p.get('to'), name: p.get('name') || 'Unknown Contact' };
+      return { to: p.get("to"), name: p.get("name") || "Unknown Contact" };
     }
 
     function showError(title, details) {
-      el.errorContainer.innerHTML = `
-        <div class="error-message critical">
-          <div class="error-title">${escapeHtml(title)}</div>
-          ${details ? `<div class="error-details">${escapeHtml(details)}</div>` : ''}
-        </div>`;
+      el.errorContainer.innerHTML =
+        '<div class="error-message">' +
+          '<div class="error-title"></div>' +
+          '<div class="error-details"></div>' +
+        '</div>';
+      el.errorContainer.querySelector(".error-title").textContent = title;
+      el.errorContainer.querySelector(".error-details").textContent = details || "";
     }
 
-    function clearError(){ el.errorContainer.innerHTML = ''; }
-    function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+    function clearError() {
+      el.errorContainer.innerHTML = "";
+    }
 
-    function setStatus(s){ el.callStatus.textContent = s; }
+    function setStatus(s) {
+      el.callStatus.textContent = s;
+    }
 
-    function startTimer(){
+    function enableKeypad(on) {
+      document.querySelectorAll(".key").forEach(b => b.disabled = !on);
+    }
+
+    function startTimer() {
       seconds = 0;
-      el.callTimer.classList.remove('hidden');
-      el.callTimer.textContent = '00:00';
+      el.callTimer.classList.remove("hidden");
       timer = setInterval(() => {
         seconds++;
-        const m = String(Math.floor(seconds/60)).padStart(2,'0');
-        const ss = String(seconds%60).padStart(2,'0');
-        el.callTimer.textContent = `${m}:${ss}`;
+        const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const s = String(seconds % 60).padStart(2, "0");
+        el.callTimer.textContent = m + ":" + s;
       }, 1000);
     }
 
-    function stopTimer(){
+    function stopTimer() {
       if (timer) clearInterval(timer);
       timer = null;
-      el.callTimer.classList.add('hidden');
-    }
-
-    function enableKeypad(on){
-      document.querySelectorAll('.key').forEach(b => b.disabled = !on);
+      el.callTimer.classList.add("hidden");
     }
 
     async function requestMic() {
       try {
-        setStatus('Requesting Mic...');
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(t => t.stop());
         return true;
       } catch (e) {
-        showError('Microphone Access Required', 'Allow microphone access, then tap Call again.');
-        setStatus('Mic Denied');
+        showError("Microphone blocked", "Allow microphone access, then click Call again.");
+        setStatus("Mic blocked");
         return false;
       }
     }
@@ -178,23 +156,22 @@
     async function initDevice() {
       if (deviceInitialized) return true;
 
-      setStatus('Connecting...');
+      setStatus("Connecting…");
       clearError();
 
-      const url = `${CONFIG.tokenEndpoint}?key=${encodeURIComponent(CONFIG.authKey)}`;
-      const res = await fetch(url, { method: 'GET' });
-
-      if (!res.ok) {
-        const txt = await res.text();
-        showError(`Token Error HTTP ${res.status}`, txt);
-        setStatus('Token Error');
+      const url = CONFIG.tokenEndpoint + "?key=" + encodeURIComponent(CONFIG.authKey);
+      const r = await fetch(url, { method: "GET" });
+      if (!r.ok) {
+        const t = await r.text();
+        showError("Token error", "HTTP " + r.status + " — " + t);
+        setStatus("Token error");
         return false;
       }
 
-      const data = await res.json();
+      const data = await r.json();
       if (!data.token) {
-        showError('Token Missing', JSON.stringify(data));
-        setStatus('Token Error');
+        showError("Token error", "No token returned.");
+        setStatus("Token error");
         return false;
       }
 
@@ -203,147 +180,127 @@
         codecPreferences: [Twilio.Device.CodecName.Opus, Twilio.Device.CodecName.PCMU]
       });
 
-      device.on('registered', () => {
+      device.on("registered", () => {
         isRegistered = true;
-        setStatus('Tap to Call');
+        setStatus("Tap to Call");
         el.callButton.disabled = false;
         clearError();
       });
 
-      device.on('unregistered', () => {
+      device.on("unregistered", () => {
         isRegistered = false;
-        if (!activeCall) {
-          showError('Device Offline', 'Lost connection to Twilio. Refresh to reconnect.');
-          setStatus('Offline');
+        if (!call) {
+          showError("Device offline", "Connection to Twilio lost. Refresh the page.");
+          setStatus("Offline");
           el.callButton.disabled = true;
         }
       });
 
-      device.on('error', (err) => {
-        showError('Device Error', err?.message || JSON.stringify(err));
-        setStatus('Error');
-        stopTimer();
-        enableKeypad(false);
-        el.muteBtn.disabled = true;
-        el.callButton.textContent = '📞';
-        el.callButton.classList.remove('hangup');
-        el.callButton.disabled = false;
-        activeCall = null;
+      device.on("error", (err) => {
+        showError("Device error", err && err.message ? err.message : String(err));
+        setStatus("Error");
       });
 
-      setStatus('Registering...');
       await device.register();
       deviceInitialized = true;
       return true;
     }
 
-    function resetUIAfterCall() {
-      stopTimer();
-      enableKeypad(false);
-      el.muteBtn.disabled = true;
-      isMuted = false;
-      el.muteBtn.textContent = 'Mute';
-      el.muteBtn.classList.remove('active');
-      el.callButton.textContent = '📞';
-      el.callButton.classList.remove('hangup');
-      el.callButton.disabled = false;
-      activeCall = null;
-      if (isRegistered) setStatus('Tap to Call');
+    async function placeCall(to) {
+      setStatus("Calling…");
+      el.callButton.disabled = true;
+
+      call = await device.connect({ params: { To: to } });
+
+      call.on("accept", () => {
+        setStatus("Connected");
+        enableKeypad(true);
+        el.muteBtn.disabled = false;
+        el.callButton.textContent = "✖";
+        el.callButton.classList.add("hangup");
+        el.callButton.disabled = false;
+        startTimer();
+      });
+
+      call.on("disconnect", () => {
+        setStatus("Call ended");
+        stopTimer();
+        enableKeypad(false);
+        el.muteBtn.disabled = true;
+        el.callButton.textContent = "📞";
+        el.callButton.classList.remove("hangup");
+        el.callButton.disabled = false;
+        call = null;
+      });
+
+      call.on("error", (err) => {
+        showError("Call error", err && err.message ? err.message : String(err));
+        setStatus("Call failed");
+      });
     }
 
-    async function handleCallClick() {
-      // Hang up if in call
-      if (activeCall) {
-        activeCall.disconnect();
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest(".key");
+      if (!btn || !call) return;
+      call.sendDigits(btn.getAttribute("data-digit"));
+    });
+
+    el.muteBtn.addEventListener("click", () => {
+      if (!call) return;
+      isMuted = !isMuted;
+      call.mute(isMuted);
+      el.muteBtn.textContent = isMuted ? "Unmute" : "Mute";
+      el.muteBtn.classList.toggle("active", isMuted);
+    });
+
+    el.callButton.addEventListener("click", async () => {
+      const p = params();
+
+      // hangup
+      if (call) {
+        call.disconnect();
         return;
       }
 
-      const params = getParams();
-      if (!params.to) {
-        showError('Missing Phone Number', 'URL must include ?to=+14165551234');
-        setStatus('Missing Number');
-        return;
-      }
-
-      // First click flow: mic + init/register
+      // first click: mic + device init
       if (!deviceInitialized) {
-        const micOk = await requestMic();
-        if (!micOk) return;
+        const okMic = await requestMic();
+        if (!okMic) return;
 
-        const ok = await initDevice();
-        if (!ok) return;
+        const okDev = await initDevice();
+        if (!okDev) return;
 
-        // You may need to click again after registered fires
+        // After init, user clicks again to place the call (cleanest UX)
+        setStatus("Tap to Call");
         return;
       }
 
       if (!isRegistered) {
-        showError('Device Not Ready', 'Not registered yet. Wait a moment or refresh.');
+        showError("Not ready", "Device not registered. Refresh the page.");
         return;
       }
 
-      try {
-        setStatus('Calling...');
-        el.callButton.disabled = true;
-
-        activeCall = await device.connect({ params: { To: params.to } });
-
-        activeCall.on('accept', () => {
-          setStatus('Connected');
-          enableKeypad(true);
-          el.muteBtn.disabled = false;
-          startTimer();
-          el.callButton.textContent = '✖';
-          el.callButton.classList.add('hangup');
-          el.callButton.disabled = false;
-        });
-
-        activeCall.on('disconnect', resetUIAfterCall);
-        activeCall.on('cancel', resetUIAfterCall);
-        activeCall.on('reject', resetUIAfterCall);
-        activeCall.on('error', (err) => {
-          showError('Call Error', err?.message || JSON.stringify(err));
-          setStatus('Call Failed');
-          resetUIAfterCall();
-        });
-
-      } catch (e) {
-        showError('Call Failed', e?.message || String(e));
-        setStatus('Failed');
-        resetUIAfterCall();
+      if (!p.to) {
+        showError("Missing number", "Open with ?to=+14165551234&name=Test");
+        return;
       }
-    }
 
-    // DTMF + mute
-    document.querySelectorAll('.key').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (activeCall) activeCall.sendDigits(btn.textContent);
-      });
+      await placeCall(p.to);
     });
 
-    el.muteBtn.addEventListener('click', () => {
-      if (!activeCall) return;
-      isMuted = !isMuted;
-      activeCall.mute(isMuted);
-      el.muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
-      el.muteBtn.classList.toggle('active', isMuted);
+    window.addEventListener("load", () => {
+      const p = params();
+      el.businessName.textContent = p.name;
+      el.phoneNumber.textContent = p.to || "—";
+      setStatus("Tap to Call");
+      if (!p.to) showError("Missing number", "Open with ?to=+14165551234&name=Test");
     });
 
-    el.callButton.addEventListener('click', handleCallClick);
-
-    window.addEventListener('load', () => {
-      const params = getParams();
-      el.businessName.textContent = params.name;
-      el.phoneNumber.textContent = params.to || '—';
-      setStatus(params.to ? 'Tap to Call' : 'Missing Number');
-      if (!params.to) showError('Missing Phone Number', 'Open with ?to=+14165551234&name=Test');
-    });
-
-    window.addEventListener('beforeunload', () => {
+    window.addEventListener("beforeunload", () => {
       try {
-        if (activeCall) activeCall.disconnect();
+        if (call) call.disconnect();
         if (device) device.destroy();
-      } catch {}
+      } catch (_) {}
     });
   </script>
 </body>
