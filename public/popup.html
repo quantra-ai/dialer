@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Opening Dialer...</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #ffffff;
@@ -23,9 +19,7 @@
       text-align: center;
       padding: 40px 20px;
     }
-    .fallback.show {
-      display: block;
-    }
+    .fallback.show { display: block; }
     .fallback h1 {
       font-size: 20px;
       color: #1c1c1e;
@@ -49,12 +43,8 @@
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
     }
-    .fallback button:hover {
-      background: #30b350;
-    }
-    .fallback button:active {
-      transform: scale(0.98);
-    }
+    .fallback button:hover { background: #30b350; }
+    .fallback button:active { transform: scale(0.98); }
   </style>
 </head>
 <body>
@@ -69,21 +59,26 @@
     const to = params.get('to');
     const name = params.get('name') || 'Unknown Contact';
 
-    const dialerUrl = new URL(window.location.origin);
-    dialerUrl.searchParams.set('to', to);
+    // If missing phone number, show fallback immediately
+    if (!to) {
+      document.getElementById('fallback').classList.add('show');
+    }
+
+    const dialerUrl = new URL(window.location.origin + '/');
+    dialerUrl.searchParams.set('to', to || '');
     dialerUrl.searchParams.set('name', name);
     dialerUrl.searchParams.set('compact', '1');
 
-    const width = 360;
-    const height = 720;
-    const left = screen.availWidth - width - 30;
-    const top = 80;
+    const popupWidth = 360;
+    const popupHeight = 720;
+    const popupLeft = Math.max(0, (screen.availWidth - popupWidth - 30));
+    const popupTop = 80;
 
     const features = [
-      `width=${width}`,
-      `height=${height}`,
-      `left=${left}`,
-      `top=${top}`,
+      `width=${popupWidth}`,
+      `height=${popupHeight}`,
+      `left=${popupLeft}`,
+      `top=${popupTop}`,
       'resizable=yes',
       'scrollbars=no',
       'toolbar=no',
@@ -92,23 +87,30 @@
       'status=no'
     ].join(',');
 
-    let popupWindow = null;
     let popupOpened = false;
 
+    function showFallback() {
+      if (!popupOpened) {
+        document.getElementById('fallback').classList.add('show');
+      }
+    }
+
     function attemptOpen() {
+      if (!to) return;
+
       try {
-        popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', features);
-        
+        const popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', features);
+
         if (popupWindow && !popupWindow.closed && typeof popupWindow.closed !== 'undefined') {
           popupOpened = true;
           popupWindow.focus();
-          
+
           setTimeout(() => {
             try {
               window.close();
             } catch (e) {
-              // Fallback if window.close() fails
-              document.body.innerHTML = '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">You can close this tab now.</div>';
+              document.body.innerHTML =
+                '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">Dialer opened. You can close this tab.</div>';
             }
           }, 250);
         } else {
@@ -119,28 +121,16 @@
       }
     }
 
-    function showFallback() {
-      if (!popupOpened) {
-        document.getElementById('fallback').classList.add('show');
-      }
-    }
+    // Attempt 1: on load frame
+    requestAnimationFrame(() => attemptOpen());
 
-    // Attempt 1: Immediate on load
-    requestAnimationFrame(() => {
-      attemptOpen();
-    });
-
-    // Attempt 2: After 300ms
+    // Attempt 2: after 300ms
     setTimeout(() => {
-      if (!popupOpened) {
-        attemptOpen();
-      }
+      if (!popupOpened) attemptOpen();
     }, 300);
 
-    // Retry button
-    document.getElementById('retryBtn').addEventListener('click', () => {
-      attemptOpen();
-    });
+    // Manual retry
+    document.getElementById('retryBtn').addEventListener('click', attemptOpen);
   </script>
 </body>
 </html>
