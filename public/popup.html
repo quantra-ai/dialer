@@ -3,169 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Open Dialer</title>
+  <title>Opening Dialer...</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f2f2f7;
+      background: #ffffff;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
     }
-    .launcher-card {
-      background: white;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    .fallback {
+      display: none;
       text-align: center;
+      padding: 40px 20px;
     }
-    .icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    h1 {
+    .fallback.show { display: block; }
+    .fallback h1 {
       font-size: 20px;
       color: #1c1c1e;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
       font-weight: 600;
     }
-    .contact-info {
-      margin: 20px 0;
-      padding: 16px;
-      background: #f8f9fa;
-      border-radius: 12px;
+    .fallback p {
+      font-size: 14px;
+      color: #8e8e93;
+      margin-bottom: 24px;
+      line-height: 1.5;
     }
-    .contact-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1c1c1e;
-      margin-bottom: 4px;
-      word-wrap: break-word;
-    }
-    .contact-number {
-      font-size: 18px;
-      color: #667eea;
-      font-family: monospace;
-    }
-    .open-btn {
-      width: 100%;
-      padding: 14px 24px;
+    .fallback button {
+      padding: 12px 32px;
       background: #34c759;
       color: white;
       border: none;
-      border-radius: 10px;
-      font-size: 16px;
+      border-radius: 8px;
+      font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
       box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
     }
-    .open-btn:hover {
-      background: #30b350;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(52, 199, 89, 0.4);
-    }
-    .open-btn:active {
-      transform: translateY(0);
-    }
-    .open-btn:disabled {
-      background: #8e8e93;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .status-message {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: none;
-    }
-    .status-message.show {
-      display: block;
-    }
-    .status-message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .status-message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .info-text {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #8e8e93;
-      line-height: 1.4;
-    }
+    .fallback button:hover { background: #30b350; }
+    .fallback button:active { transform: scale(0.98); }
   </style>
 </head>
 <body>
-  <div class="launcher-card">
-    <div class="icon">📞</div>
-    <h1>Ready to Call</h1>
-    
-    <div class="contact-info">
-      <div class="contact-name" id="contactName">Loading...</div>
-      <div class="contact-number" id="contactNumber">—</div>
-    </div>
-
-    <button class="open-btn" id="openBtn">
-      Open Dialer
-    </button>
-
-    <div class="status-message" id="statusMessage"></div>
-
-    <div class="info-text">
-      Click to open the dialer in a new window
-    </div>
+  <div class="fallback" id="fallback">
+    <h1>Popup Blocked</h1>
+    <p>Please allow popups for this site, then click below:</p>
+    <button id="retryBtn">Open Dialer</button>
   </div>
 
   <script>
-    // Parse URL parameters
     const params = new URLSearchParams(window.location.search);
-    const phoneNumber = params.get('to');
-    const contactName = params.get('name') || 'Unknown Contact';
+    const to = params.get('to');
+    const name = params.get('name') || 'Unknown Contact';
 
-    // Display contact info
-    document.getElementById('contactName').textContent = contactName;
-    document.getElementById('contactNumber').textContent = phoneNumber || 'No phone number';
+    // If missing phone number, show fallback immediately
+    if (!to) {
+      document.getElementById('fallback').classList.add('show');
+    }
 
-    // Build dialer URL with compact mode
-    const dialerUrl = new URL(window.location.origin);
-    dialerUrl.searchParams.set('to', phoneNumber);
-    dialerUrl.searchParams.set('name', contactName);
+    const dialerUrl = new URL(window.location.origin + '/');
+    dialerUrl.searchParams.set('to', to || '');
+    dialerUrl.searchParams.set('name', name);
     dialerUrl.searchParams.set('compact', '1');
 
-    // Popup window reference (reused if already open)
-    let popupWindow = null;
+    const popupWidth = 180;
+    const popupHeight = 400;
+    const popupLeft = Math.max(0, (screen.availWidth - popupWidth - 30));
+    const popupTop = 80;
 
-    // Popup dimensions and position
-    const popupWidth = 418;
-    const popupHeight = 1004;
-    const rightMargin = 20;
-    const topOffset = 40;
-    
-    // Calculate position (right side of screen)
-    // IMPORTANT: Cannot use variable names "top" or "left" as they conflict with window.top/window.left
-    const posX = screen.availWidth - popupWidth - rightMargin;
-    const posY = topOffset;
-
-    const popupFeatures = [
+    const features = [
       `width=${popupWidth}`,
       `height=${popupHeight}`,
-      `left=${posX}`,
-      `top=${posY}`,
+      `left=${popupLeft}`,
+      `top=${popupTop}`,
       'resizable=yes',
       'scrollbars=no',
       'toolbar=no',
@@ -174,86 +87,50 @@
       'status=no'
     ].join(',');
 
-    // Status message helper
-    function showStatus(message, type) {
-      const statusEl = document.getElementById('statusMessage');
-      statusEl.textContent = message;
-      statusEl.className = `status-message show ${type}`;
-    }
+    let popupOpened = false;
 
-    function hideStatus() {
-      const statusEl = document.getElementById('statusMessage');
-      statusEl.className = 'status-message';
-    }
-
-    // Open dialer function
-    // CRITICAL: This MUST only be called from a user-initiated click event
-    // Modern browsers (Chrome/Safari/Edge 2024+) block window.open() outside of user gestures
-    function openDialer() {
-      if (!phoneNumber) {
-        showStatus('Missing phone number', 'error');
-        return;
+    function showFallback() {
+      if (!popupOpened) {
+        document.getElementById('fallback').classList.add('show');
       }
+    }
 
-      hideStatus();
+    function attemptOpen() {
+      if (!to) return;
 
       try {
-        // Check if popup is already open and reuse it
-        if (popupWindow && !popupWindow.closed) {
+        const popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', features);
+
+        if (popupWindow && !popupWindow.closed && typeof popupWindow.closed !== 'undefined') {
+          popupOpened = true;
           popupWindow.focus();
-          popupWindow.location.href = dialerUrl.toString();
-          showStatus('Dialer updated and focused', 'success');
-          return;
-        }
 
-        // Open new popup window
-        // window.open() returns null if blocked by popup blocker
-        popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', popupFeatures);
-
-        if (!popupWindow || popupWindow.closed || typeof popupWindow.closed === 'undefined') {
-          // Popup was blocked
-          showStatus('Popup blocked! Please allow popups for this site and try again.', 'error');
+          setTimeout(() => {
+            try {
+              window.close();
+            } catch (e) {
+              document.body.innerHTML =
+                '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">Dialer opened. You can close this tab.</div>';
+            }
+          }, 250);
         } else {
-          // Popup opened successfully
-          popupWindow.focus();
-          showStatus('Dialer opened successfully', 'success');
-          
-          // IMPORTANT: DO NOT call window.close() here
-          // Browsers prevent scripts from closing windows that were NOT opened by window.open()
-          // This launcher page was opened by the user/Airtable, NOT by a script
-          // Attempting to close it will fail with: "Scripts may close only the windows that were opened by them"
-          // The user must manually close this tab if desired
+          showFallback();
         }
-      } catch (error) {
-        console.error('Error opening popup:', error);
-        showStatus('Failed to open dialer: ' + error.message, 'error');
+      } catch (e) {
+        showFallback();
       }
     }
 
-    // Disable button if no phone number
-    const openBtn = document.getElementById('openBtn');
-    if (!phoneNumber) {
-      openBtn.disabled = true;
-      openBtn.textContent = 'Missing Phone Number';
-      showStatus('No phone number provided in URL', 'error');
-    }
+    // Attempt 1: on load frame
+    requestAnimationFrame(() => attemptOpen());
 
-    // Attach click handler
-    // CRITICAL: window.open() MUST be called directly within this click handler
-    // Browsers will block window.open() if called asynchronously or from setTimeout/Promise
-    openBtn.addEventListener('click', openDialer);
+    // Attempt 2: after 300ms
+    setTimeout(() => {
+      if (!popupOpened) attemptOpen();
+    }, 300);
 
-    // Allow Enter key to trigger button
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && phoneNumber && !openBtn.disabled) {
-        openDialer();
-      }
-    });
-
-    // NO AUTO-OPEN LOGIC HERE
-    // Attempting to call window.open() on page load violates browser security policies
-    // window.open() requires a user gesture (click, keypress, etc.)
-    // Any attempt to auto-open will be blocked by popup blockers in modern browsers
+    // Manual retry
+    document.getElementById('retryBtn').addEventListener('click', attemptOpen);
   </script>
 </body>
 </html>
