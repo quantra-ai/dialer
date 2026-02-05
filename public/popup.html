@@ -55,82 +55,81 @@
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const to = params.get('to');
-    const name = params.get('name') || 'Unknown Contact';
+    (function() {
+      const fallbackEl = document.getElementById('fallback');
+      const retryBtn = document.getElementById('retryBtn');
 
-    // If missing phone number, show fallback immediately
-    if (!to) {
-      document.getElementById('fallback').classList.add('show');
-    }
+      const params = new URLSearchParams(window.location.search);
+      const to = params.get('to');
+      const name = params.get('name') || 'Unknown Contact';
 
-    const dialerUrl = new URL(window.location.origin + '/');
-    dialerUrl.searchParams.set('to', to || '');
-    dialerUrl.searchParams.set('name', name);
-    dialerUrl.searchParams.set('compact', '1');
-
-    const popupWidth = 180;
-    const popupHeight = 400;
-    const popupLeft = Math.max(0, (screen.availWidth - popupWidth - 30));
-    const popupTop = 80;
-
-    const features = [
-      `width=${popupWidth}`,
-      `height=${popupHeight}`,
-      `left=${popupLeft}`,
-      `top=${popupTop}`,
-      'resizable=yes',
-      'scrollbars=no',
-      'toolbar=no',
-      'menubar=no',
-      'location=no',
-      'status=no'
-    ].join(',');
-
-    let popupOpened = false;
-
-    function showFallback() {
-      if (!popupOpened) {
-        document.getElementById('fallback').classList.add('show');
+      if (!to) {
+        fallbackEl.classList.add('show');
+        return;
       }
-    }
 
-    function attemptOpen() {
-      if (!to) return;
+      const dialerUrl = new URL(window.location.origin + '/');
+      dialerUrl.searchParams.set('to', to);
+      dialerUrl.searchParams.set('name', name);
+      dialerUrl.searchParams.set('compact', '1');
 
-      try {
-        const popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', features);
+      const popupWidth = 360;
+      const popupHeight = 640;
+      const popupLeft = Math.max(0, (screen.availWidth - popupWidth - 30));
+      const popupTop = 80;
 
-        if (popupWindow && !popupWindow.closed && typeof popupWindow.closed !== 'undefined') {
-          popupOpened = true;
-          popupWindow.focus();
+      const features = [
+        `width=${popupWidth}`,
+        `height=${popupHeight}`,
+        `left=${popupLeft}`,
+        `top=${popupTop}`,
+        'resizable=yes',
+        'scrollbars=no',
+        'toolbar=no',
+        'menubar=no',
+        'location=no',
+        'status=no'
+      ].join(',');
 
-          setTimeout(() => {
-            try {
-              window.close();
-            } catch (e) {
-              document.body.innerHTML =
-                '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">Dialer opened. You can close this tab.</div>';
-            }
-          }, 250);
-        } else {
-          showFallback();
+      function closeLauncherTab() {
+        // Let the popup finish focusing first
+        setTimeout(() => {
+          try {
+            window.close();
+          } catch (e) {
+            document.body.innerHTML =
+              '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">Dialer opened. You can close this tab.</div>';
+          }
+        }, 250);
+      }
+
+      function openDialerPopup() {
+        const uniqueName = 'TwilioDialer_' + Date.now();
+        const popup = window.open('about:blank', uniqueName, features);
+
+        if (popup && !popup.closed && typeof popup.closed !== 'undefined') {
+          popup.location.href = dialerUrl.toString();
+          popup.focus();
+          closeLauncherTab();
+          return true;
         }
-      } catch (e) {
-        showFallback();
+
+        return false;
       }
-    }
 
-    // Attempt 1: on load frame
-    requestAnimationFrame(() => attemptOpen());
+      // Attempt synchronously on load to preserve the click chain
+      const opened = openDialerPopup();
 
-    // Attempt 2: after 300ms
-    setTimeout(() => {
-      if (!popupOpened) attemptOpen();
-    }, 300);
+      if (!opened) {
+        fallbackEl.classList.add('show');
+      }
 
-    // Manual retry
-    document.getElementById('retryBtn').addEventListener('click', attemptOpen);
+      // Manual retry: MUST be click-driven; on success we also close the launcher tab
+      retryBtn.addEventListener('click', () => {
+        const ok = openDialerPopup();
+        if (!ok) fallbackEl.classList.add('show');
+      });
+    })();
   </script>
 </body>
 </html>
