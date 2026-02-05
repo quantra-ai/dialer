@@ -1,136 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Opening Dialer...</title>
+  <meta charset="UTF-8" />
+  <title>Open Dialer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #ffffff;
       min-height: 100vh;
+      background: #f2f2f7;
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
-    .fallback {
-      display: none;
+
+    .card {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
       text-align: center;
-      padding: 40px 20px;
     }
-    .fallback.show { display: block; }
-    .fallback h1 {
+
+    h1 {
       font-size: 20px;
-      color: #1c1c1e;
-      margin-bottom: 12px;
-      font-weight: 600;
+      margin-bottom: 16px;
     }
-    .fallback p {
-      font-size: 14px;
-      color: #8e8e93;
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-    .fallback button {
-      padding: 12px 32px;
-      background: #34c759;
-      color: white;
+
+    button {
+      width: 100%;
+      padding: 16px;
       border: none;
-      border-radius: 8px;
-      font-size: 15px;
+      border-radius: 12px;
+      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(52, 199, 89, 0.3);
+      background: #34c759;
+      color: white;
     }
-    .fallback button:hover { background: #30b350; }
-    .fallback button:active { transform: scale(0.98); }
+
+    button:hover {
+      opacity: 0.95;
+    }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #666;
+    }
+
+    .fallback {
+      display: none;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #d00;
+    }
+
+    .fallback a {
+      color: #007aff;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <div class="fallback" id="fallback">
-    <h1>Popup Blocked</h1>
-    <p>Please allow popups for this site, then click below:</p>
-    <button id="retryBtn">Open Dialer</button>
+
+  <div class="card">
+    <h1>Open Dialer</h1>
+    <button id="openBtn">Open Dialer</button>
+
+    <div class="hint">
+      If nothing happens, allow popups for this site.
+    </div>
+
+    <div class="fallback" id="fallback">
+      Popup blocked.<br />
+      <a id="fallbackLink" href="#" target="_blank">Click here to open dialer</a>
+    </div>
   </div>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const to = params.get('to');
-    const name = params.get('name') || 'Unknown Contact';
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const to = params.get("to");
+  const name = params.get("name") || "Unknown";
 
-    // If missing phone number, show fallback immediately
-    if (!to) {
-      document.getElementById('fallback').classList.add('show');
+  const dialerUrl = new URL("/dialer.html", window.location.origin);
+  dialerUrl.searchParams.set("to", to);
+  dialerUrl.searchParams.set("name", name);
+  dialerUrl.searchParams.set("compact", "1");
+
+  const features = [
+    "width=360",
+    "height=640",
+    "top=100",
+    "left=100",
+    "resizable=no",
+    "scrollbars=no",
+    "toolbar=no",
+    "menubar=no",
+    "location=no",
+    "status=no"
+  ].join(",");
+
+  const openBtn = document.getElementById("openBtn");
+  const fallback = document.getElementById("fallback");
+  const fallbackLink = document.getElementById("fallbackLink");
+
+  openBtn.addEventListener("click", () => {
+    if (!to) return;
+
+    const popupName = `TwilioDialer_${Date.now()}`;
+
+    const popup = window.open("about:blank", popupName, features);
+
+    if (popup && !popup.closed) {
+      popup.document.title = "Sales Dialer";
+      popup.location.href = dialerUrl.toString();
+      popup.focus();
+
+      // Close launcher after success
+      setTimeout(() => {
+        try { window.close(); } catch (e) {}
+      }, 200);
+    } else {
+      fallback.style.display = "block";
+      fallbackLink.href = dialerUrl.toString();
     }
+  });
+</script>
 
-    const dialerUrl = new URL(window.location.origin + '/');
-    dialerUrl.searchParams.set('to', to || '');
-    dialerUrl.searchParams.set('name', name);
-    dialerUrl.searchParams.set('compact', '1');
-
-    const popupWidth = 180;
-    const popupHeight = 400;
-    const popupLeft = Math.max(0, (screen.availWidth - popupWidth - 30));
-    const popupTop = 80;
-
-    const features = [
-      `width=${popupWidth}`,
-      `height=${popupHeight}`,
-      `left=${popupLeft}`,
-      `top=${popupTop}`,
-      'resizable=yes',
-      'scrollbars=no',
-      'toolbar=no',
-      'menubar=no',
-      'location=no',
-      'status=no'
-    ].join(',');
-
-    let popupOpened = false;
-
-    function showFallback() {
-      if (!popupOpened) {
-        document.getElementById('fallback').classList.add('show');
-      }
-    }
-
-    function attemptOpen() {
-      if (!to) return;
-
-      try {
-        const popupWindow = window.open(dialerUrl.toString(), 'TwilioDialer', features);
-
-        if (popupWindow && !popupWindow.closed && typeof popupWindow.closed !== 'undefined') {
-          popupOpened = true;
-          popupWindow.focus();
-
-          setTimeout(() => {
-            try {
-              window.close();
-            } catch (e) {
-              document.body.innerHTML =
-                '<div style="text-align:center;padding:40px;color:#8e8e93;font-size:14px;">Dialer opened. You can close this tab.</div>';
-            }
-          }, 250);
-        } else {
-          showFallback();
-        }
-      } catch (e) {
-        showFallback();
-      }
-    }
-
-    // Attempt 1: on load frame
-    requestAnimationFrame(() => attemptOpen());
-
-    // Attempt 2: after 300ms
-    setTimeout(() => {
-      if (!popupOpened) attemptOpen();
-    }, 300);
-
-    // Manual retry
-    document.getElementById('retryBtn').addEventListener('click', attemptOpen);
-  </script>
 </body>
 </html>
