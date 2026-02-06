@@ -110,6 +110,11 @@ async function initDevice() {
     codecPreferences: ["opus", "pcmu"],
   });
 
+  // Disable Twilio SDK built-in sounds (ringback/chimes)
+device.audio.outgoing(false);    // outgoing/ringback sound
+device.audio.disconnect(false);  // disconnect tone
+device.audio.incoming(false);    // incoming ringtone (optional but fine)
+
   device.on("registered", () => {
     isRegistered = true;
     setStatus("Tap to Call");
