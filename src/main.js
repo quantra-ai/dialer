@@ -3,7 +3,8 @@ import "./style.css";
 
 const CONFIG = {
   tokenEndpoint:
-    import.meta.env.VITE_TOKEN_ENDPOINT || "https://twilio-token-6608.twil.io/twilio-token",
+    import.meta.env.VITE_TOKEN_ENDPOINT ||
+    "https://twilio-token-6608.twil.io/twilio-token",
   authKey: import.meta.env.VITE_DIALER_AUTH_KEY || "YOUR_KEY_HERE",
 };
 
@@ -115,6 +116,17 @@ async function initDevice() {
       logLevel: 1,
     });
 
+    // 🔇 Disable Twilio SDK built-in sounds (chimes/tones)
+    // Must be called AFTER new Device() and BEFORE device.register()
+    try {
+      device.audio?.incoming?.(false);
+      device.audio?.outgoing?.(false);
+      device.audio?.disconnect?.(false);
+      console.log("[Audio] Twilio SDK sounds disabled");
+    } catch (e) {
+      console.warn("[Audio] Could not disable Twilio sounds:", e);
+    }
+
     device.on("registered", () => {
       isRegistered = true;
       setStatus("Tap to Call");
@@ -146,8 +158,8 @@ async function placeCall(to, recordId, businessName) {
 
   const callParams = {
     To: to, // IMPORTANT: your Twilio Function uses event.To
-    RecordId: recordId || "", // NEW: used by /dial-out -> recording callback
-    BusinessName: businessName || "Unknown", // NEW: filename/metadata
+    RecordId: recordId || "", // used by /dial-out -> recording callback
+    BusinessName: businessName || "Unknown", // filename/metadata
   };
 
   call = await device.connect({ params: callParams });
