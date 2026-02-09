@@ -28,124 +28,129 @@ const el = {
 
 function params() {
   const p = new URLSearchParams(location.search);
-  return { to: p.get("to"), name: p.get("name") || "Unknown Contact" };
+  return {
+    to: p.get("to"),
+    name: p.get("name") || "Unknown Contact",
+    recordId: p.get("recordId") || "",
+  };
 }
 
 function showError(title, details) {
-  el.errorContainer.innerHTML =
-    '<div class="error-message">' +
-    '<div class="error-title"></div>' +
-    '<div class="error-details"></div>' +
-    "</div>";
-  el.errorContainer.querySelector(".error-title").textContent = title;
-  el.errorContainer.querySelector(".error-details").textContent = details || "";
+  el.errorContainer.innerHTML = `
+    <div class="error">
+      <div class="error-title">${title}</div>
+      <div class="error-details">${details || ""}</div>
+    </div>
+  `;
 }
 
 function clearError() {
   el.errorContainer.innerHTML = "";
 }
 
-function setStatus(s) {
-  el.callStatus.textContent = s;
+function setStatus(text) {
+  el.callStatus.textContent = text;
 }
 
-function enableKeypad(on) {
-  document.querySelectorAll(".key").forEach((b) => (b.disabled = !on));
+function setTimerText(t) {
+  el.callTimer.textContent = t;
 }
 
 function startTimer() {
+  stopTimer();
   seconds = 0;
-  el.callTimer.classList.remove("hidden");
+  setTimerText("00:00");
   timer = setInterval(() => {
-    seconds++;
-    const m = String(Math.floor(seconds / 60)).padStart(2, "0");
-    const s = String(seconds % 60).padStart(2, "0");
-    el.callTimer.textContent = `${m}:${s}`;
+    seconds += 1;
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    setTimerText(`${mm}:${ss}`);
   }, 1000);
 }
 
 function stopTimer() {
   if (timer) clearInterval(timer);
   timer = null;
-  el.callTimer.classList.add("hidden");
+  setTimerText("00:00");
+}
+
+function enableKeypad(enabled) {
+  document.querySelectorAll(".key").forEach((btn) => {
+    btn.disabled = !enabled;
+  });
 }
 
 async function requestMic() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((t) => t.stop());
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+    clearError();
     return true;
   } catch (e) {
-    showError("Microphone blocked", "Allow microphone access, then click Call again.");
-    setStatus("Mic blocked");
+    showError(
+      "Microphone blocked",
+      "Allow microphone access, then refresh and try again."
+    );
     return false;
   }
 }
 
 async function initDevice() {
-  if (deviceInitialized) return true;
-
-  setStatus("Connecting…");
-  clearError();
-
-  const url = `${CONFIG.tokenEndpoint}?key=${encodeURIComponent(CONFIG.authKey)}`;
-  const r = await fetch(url, { method: "GET" });
-
-  if (!r.ok) {
-    const t = await r.text();
-    showError("Token error", `HTTP ${r.status} — ${t}`);
-    setStatus("Token error");
-    return false;
-  }
-
-  const data = await r.json();
-  if (!data.token) {
-    showError("Token error", "No token returned.");
-    setStatus("Token error");
-    return false;
-  }
-
-  device = new Device(data.token, {
-    logLevel: 1,
-    codecPreferences: ["opus", "pcmu"],
-  });
-
-  // Disable Twilio SDK built-in sounds (ringback/chimes)
-device.audio.outgoing(false);    // outgoing/ringback sound
-device.audio.disconnect(false);  // disconnect tone
-device.audio.incoming(false);    // incoming ringtone (optional but fine)
-
-  device.on("registered", () => {
-    isRegistered = true;
-    setStatus("Tap to Call");
-    el.callButton.disabled = false;
+  try {
+    setStatus("Connecting…");
     clearError();
-  });
 
-  device.on("unregistered", () => {
-    isRegistered = false;
-    if (!call) {
-      showError("Device offline", "Connection to Twilio lost. Refresh the page.");
-      setStatus("Offline");
-      el.callButton.disabled = true;
+    const url = new URL(CONFIG.tokenEndpoint);
+    url.searchParams.set("key", CONFIG.authKey);
+
+    const res = await fetch(url.toString(), { method: "GET" });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Token error: ${res.status} ${txt}`);
     }
-  });
 
-  device.on("error", (err) => {
-    showError("Device error", err?.message ? err.message : String(err));
+    const data = await res.json();
+    if (!data.token) throw new Error("Token endpoint returned no token");
+
+    device = new Device(data.token, {
+      logLevel: 1,
+    });
+
+    device.on("registered", () => {
+      isRegistered = true;
+      setStatus("Tap to Call");
+    });
+
+    device.on("unregistered", () => {
+      isRegistered = false;
+      setStatus("Not Registered");
+    });
+
+    device.on("error", (err) => {
+      showError("Device error", err.message || String(err));
+      setStatus("Error");
+    });
+
+    await device.register();
+    deviceInitialized = true;
+    return true;
+  } catch (err) {
+    showError("Init failed", err.message || String(err));
     setStatus("Error");
-  });
-
-  await device.register();
-  deviceInitialized = true;
-  return true;
+    return false;
+  }
 }
 
-async function placeCall(to) {
+async function placeCall(to, recordId, businessName) {
   setStatus("Calling…");
   el.callButton.disabled = true;
 
-  call = await device.connect({ params: { To: to } });
+  const callParams = {
+    To: to, // IMPORTANT: your Twilio Function uses event.To
+    RecordId: recordId || "", // NEW: used by /dial-out -> recording callback
+    BusinessName: businessName || "Unknown", // NEW: filename/metadata
+  };
+
+  call = await device.connect({ params: callParams });
 
   call.on("accept", () => {
     setStatus("Connected");
@@ -153,52 +158,72 @@ async function placeCall(to) {
     el.muteBtn.disabled = false;
 
     el.callButton.textContent = "✖";
-    el.callButton.classList.add("hangup");
     el.callButton.disabled = false;
 
     startTimer();
   });
 
   call.on("disconnect", () => {
-    setStatus("Call ended");
-    stopTimer();
+    setStatus("Tap to Call");
     enableKeypad(false);
-
     el.muteBtn.disabled = true;
-    el.muteBtn.textContent = "Mute";
-    el.muteBtn.classList.remove("active");
-    isMuted = false;
 
-    el.callButton.textContent = "📞";
-    el.callButton.classList.remove("hangup");
+    el.callButton.textContent = "Call";
     el.callButton.disabled = false;
 
     call = null;
+    isMuted = false;
+    el.muteBtn.textContent = "Mute";
+    stopTimer();
+  });
+
+  call.on("cancel", () => {
+    setStatus("Cancelled");
+  });
+
+  call.on("reject", () => {
+    showError("Call rejected", "The call was rejected.");
+    setStatus("Rejected");
+    el.callButton.textContent = "Call";
+    el.callButton.disabled = false;
+    call = null;
+    stopTimer();
   });
 
   call.on("error", (err) => {
-    showError("Call error", err?.message ? err.message : String(err));
-    setStatus("Call failed");
+    showError("Call error", err.message || String(err));
+    setStatus("Error");
+    el.callButton.textContent = "Call";
+    el.callButton.disabled = false;
+    call = null;
+    stopTimer();
   });
 }
 
-// keypad digit sending
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".key");
-  if (!btn || !call) return;
-  call.sendDigits(btn.getAttribute("data-digit"));
-});
+function sendDtmf(digit) {
+  try {
+    if (call) call.sendDigits(digit);
+  } catch (e) {
+    // ignore
+  }
+}
 
-// mute
-el.muteBtn.addEventListener("click", () => {
+function toggleMute() {
   if (!call) return;
   isMuted = !isMuted;
   call.mute(isMuted);
   el.muteBtn.textContent = isMuted ? "Unmute" : "Mute";
-  el.muteBtn.classList.toggle("active", isMuted);
+}
+
+document.querySelectorAll(".key").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const digit = btn.getAttribute("data-digit");
+    sendDtmf(digit);
+  });
 });
 
-// call button
+el.muteBtn.addEventListener("click", toggleMute);
+
 el.callButton.addEventListener("click", async () => {
   const p = params();
 
@@ -230,7 +255,7 @@ el.callButton.addEventListener("click", async () => {
     return;
   }
 
-  await placeCall(p.to);
+  await placeCall(p.to, p.recordId, p.name);
 });
 
 window.addEventListener("load", () => {
