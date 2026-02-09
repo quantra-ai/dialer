@@ -58,15 +58,18 @@
     const params = new URLSearchParams(window.location.search);
     const to = params.get('to');
     const name = params.get('name') || 'Unknown Contact';
+    const recordId = params.get('recordId') || '';
 
     // If missing phone number, show fallback immediately
     if (!to) {
       document.getElementById('fallback').classList.add('show');
     }
 
+    // Open the actual dialer (index.html) and forward ALL params
     const dialerUrl = new URL(window.location.origin + '/');
     dialerUrl.searchParams.set('to', to || '');
     dialerUrl.searchParams.set('name', name);
+    if (recordId) dialerUrl.searchParams.set('recordId', recordId);
     dialerUrl.searchParams.set('compact', '1');
 
     const popupWidth = 180;
