@@ -81,11 +81,11 @@ function enableKeypad(enabled) {
   });
 }
 
-// ✅ Stronger audio constraints to reduce recording echo
+// ✅ BETTER audio constraints for clarity (less “muffled/underwater”)
 const AUDIO_CONSTRAINTS = {
   echoCancellation: true,
-  noiseSuppression: true,
-  autoGainControl: true,
+  noiseSuppression: false,  // CHANGED (was true)
+  autoGainControl: false,   // CHANGED (was true)
 };
 
 async function requestMic() {
@@ -122,8 +122,12 @@ async function initDevice() {
     device = new Device(data.token, {
       logLevel: 1,
 
-      // ✅ Tell Twilio/WebRTC to use echo cancellation etc
+      // ✅ Apply our mic constraints
       audioConstraints: AUDIO_CONSTRAINTS,
+
+      // ✅ Force higher-quality codec & bitrate (big clarity boost)
+      codecPreferences: ["opus", "pcmu"],
+      maxAverageBitrate: 40000,
     });
 
     // 🔇 Disable Twilio SDK built-in sounds (chimes/tones)
