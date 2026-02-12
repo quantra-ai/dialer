@@ -81,9 +81,16 @@ function enableKeypad(enabled) {
   });
 }
 
+// ✅ Stronger audio constraints to reduce recording echo
+const AUDIO_CONSTRAINTS = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+};
+
 async function requestMic() {
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true });
+    await navigator.mediaDevices.getUserMedia({ audio: AUDIO_CONSTRAINTS });
     clearError();
     return true;
   } catch (e) {
@@ -114,10 +121,12 @@ async function initDevice() {
 
     device = new Device(data.token, {
       logLevel: 1,
+
+      // ✅ Tell Twilio/WebRTC to use echo cancellation etc
+      audioConstraints: AUDIO_CONSTRAINTS,
     });
 
     // 🔇 Disable Twilio SDK built-in sounds (chimes/tones)
-    // Must be called AFTER new Device() and BEFORE device.register()
     try {
       device.audio?.incoming?.(false);
       device.audio?.outgoing?.(false);
@@ -157,9 +166,9 @@ async function placeCall(to, recordId, businessName) {
   el.callButton.disabled = true;
 
   const callParams = {
-    To: to, // IMPORTANT: your Twilio Function uses event.To
-    RecordId: recordId || "", // used by /dial-out -> recording callback
-    BusinessName: businessName || "Unknown", // filename/metadata
+    To: to,
+    RecordId: recordId || "",
+    BusinessName: businessName || "Unknown",
   };
 
   call = await device.connect({ params: callParams });
@@ -189,10 +198,6 @@ async function placeCall(to, recordId, businessName) {
     stopTimer();
   });
 
-  call.on("cancel", () => {
-    setStatus("Cancelled");
-  });
-
   call.on("reject", () => {
     showError("Call rejected", "The call was rejected.");
     setStatus("Rejected");
@@ -215,9 +220,7 @@ async function placeCall(to, recordId, businessName) {
 function sendDtmf(digit) {
   try {
     if (call) call.sendDigits(digit);
-  } catch (e) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 function toggleMute() {
@@ -239,13 +242,11 @@ el.muteBtn.addEventListener("click", toggleMute);
 el.callButton.addEventListener("click", async () => {
   const p = params();
 
-  // hang up
   if (call) {
     call.disconnect();
     return;
   }
 
-  // first click: mic + init
   if (!deviceInitialized) {
     const okMic = await requestMic();
     if (!okMic) return;
@@ -254,7 +255,7 @@ el.callButton.addEventListener("click", async () => {
     if (!okDev) return;
 
     setStatus("Tap to Call");
-    return; // user clicks again to place call
+    return;
   }
 
   if (!isRegistered) {
