@@ -157,7 +157,16 @@ async function initDevice() {
     } catch (e) {
       console.warn("[Audio] Could not disable Twilio sounds:", e);
     }
+    
+// 📶 Voice Insights warnings (helps diagnose "random silence" / choppiness)
+device.on("warning", (name) => {
+  console.warn("[Voice Warning]", name);
+  // If you want, you can show a small banner in the UI here.
+});
 
+device.on("warning-cleared", (name) => {
+  console.log("[Voice Warning Cleared]", name);
+});
     device.on("registered", () => {
       isRegistered = true;
       setStatus("Tap to Call");
@@ -206,19 +215,24 @@ async function placeCall(to, recordId, businessName) {
     startTimer();
   });
 
-  call.on("disconnect", () => {
-    setStatus("Tap to Call");
-    enableKeypad(false);
-    el.muteBtn.disabled = true;
+ call.on("disconnect", async () => {
+  setStatus("Tap to Call");
+  enableKeypad(false);
+  el.muteBtn.disabled = true;
 
-    el.callButton.textContent = "Call";
-    el.callButton.disabled = false;
+  el.callButton.textContent = "Call";
+  el.callButton.disabled = false;
 
-    call = null;
-    isMuted = false;
-    el.muteBtn.textContent = "Mute";
-    stopTimer();
-  });
+  call = null;
+  isMuted = false;
+  el.muteBtn.textContent = "Mute";
+  stopTimer();
+
+  // ✅ Best-practice: release input device stream if you ever set it
+  try {
+    await device?.audio?.unsetInputDevice?.();
+  } catch (_) {}
+});
 
   call.on("reject", () => {
     showError("Call rejected", "The call was rejected.");
