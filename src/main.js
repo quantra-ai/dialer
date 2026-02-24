@@ -81,12 +81,30 @@ function enableKeypad(enabled) {
   });
 }
 
-// ✅ BETTER audio constraints for clarity (less “muffled/underwater”)
-const AUDIO_CONSTRAINTS = {
-  echoCancellation: true,
-  noiseSuppression: false,  // CHANGED (was true)
-  autoGainControl: false,   // CHANGED (was true)
-};
+// 🎙️ Voice-call audio constraints (Zoom/Teams-like defaults)
+// Optional: add ?proaudio=1 to your dialer URL to use the "original sound" style mode.
+function getAudioConstraints() {
+  const p = new URLSearchParams(window.location.search);
+  const pro = p.get("proaudio") === "1";
+
+  // Normal mode = best for CRYSTAL CLEAR voice calls
+  if (!pro) {
+    return {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    };
+  }
+
+  // Pro mode = closer to "original sound" (only recommended with a headset + good mic)
+  return {
+    echoCancellation: true,
+    noiseSuppression: false,
+    autoGainControl: false,
+  };
+}
+
+const AUDIO_CONSTRAINTS = getAudioConstraints();
 
 async function requestMic() {
   try {
